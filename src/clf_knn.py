@@ -13,9 +13,10 @@ class KNN(object):
         # set up model pipeline, scaling training data to have zero mean and
         # unit variance
         self.pipeline = Pipeline(
-            [('Scale', StandardScaler()), ('clf', KNeighborsClassifier())])
+            [('Scale', StandardScaler()), ('KNN', KNeighborsClassifier())])
 
         # set up parameter grid for parameters to search over
-        self.params = {'clf__metric': ['manhattan', 'euclidean', 'chebyshev'],
-                       'clf__n_neighbors': np.arange(1, 55, 3),
-                       'clf__weights': ['uniform', 'distance']}
+        self.params = {'KNN__metric': ['manhattan', 'euclidean', 'chebyshev'],
+                       'KNN__n_neighbors': np.arange(1, 51, 2),
+                       'KNN__weights': ['uniform', 'distance']
+                       }

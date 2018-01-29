@@ -1,21 +1,22 @@
 from sklearn.metrics import confusion_matrix
-from helpers import get_datafile
+from helpers import get_abspath
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 import seaborn
 
 
-def histogram(df, dataname, outfile, outpath='plots'):
+def histogram(labels, dataname, outfile, outpath='plots'):
     """Generates a histogram of class labels in a given dataset and saves it
     to an output folder in the project directory.
 
+    Args:
+        labels (numpy.Array): array containing class labels.
+        dataname (str): name of datasets (e.g. winequality).
+        outfile (str): name of output file name.
+        outpath (str): project folder to save plot file.
     """
-    # extract labels
-    labels = df['class']
-
     # get number of bins
-    bins = len(labels.unique())
+    bins = len(np.unique(labels))
 
     # create plot and set params
     fig, ax = plt.subplots()
@@ -25,7 +26,7 @@ def histogram(df, dataname, outfile, outpath='plots'):
     ax.set_ylabel('Frequency')
 
     # save plot
-    plt.savefig(get_datafile(outfile, outpath))
+    plt.savefig(get_abspath(outfile, outpath))
     plt.close()
 
 

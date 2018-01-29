@@ -1,6 +1,5 @@
 from scipy.io import arff
-from sklearn.preprocessing import StandardScaler
-from helpers import get_datafile, save_dataset
+from helpers import get_abspath, save_dataset
 import pandas as pd
 
 
@@ -12,8 +11,8 @@ def preprocess_winequality():
     # get file paths
     sdir = 'data/winequality'
     tdir = 'data/experiments'
-    wr_file = get_datafile('winequality-red.csv', sdir)
-    ww_file = get_datafile('winequality-white.csv', sdir)
+    wr_file = get_abspath('winequality-red.csv', sdir)
+    ww_file = get_abspath('winequality-white.csv', sdir)
 
     # load as data frame
     wine_red = pd.read_csv(wr_file, sep=';')
@@ -44,7 +43,7 @@ def preprocess_seismic():
     # get file path
     sdir = 'data/seismic-bumps'
     tdir = 'data/experiments'
-    seismic_file = get_datafile('seismic-bumps.arff', sdir)
+    seismic_file = get_abspath('seismic-bumps.arff', sdir)
 
     # read arff file and convert to record array
     rawdata = arff.loadarff(seismic_file)
