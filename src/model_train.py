@@ -137,19 +137,14 @@ if __name__ == '__main__':
     df_wine = pd.read_csv(p_wine)
     df_seismic = pd.read_csv(p_seismic)
     dfs = {'wine': df_wine, 'seismic': df_seismic}
-    names = ['wine', 'seismic']
+    dnames = ['wine', 'seismic']
 
     # instantiate classifiers
     classifiers = {'KNN': KNN, 'DT': DT}
 
     # begin training loop
-    for name in names:
-        data_name = name
-
-        # get train and test splits
-        X_train, X_test, y_train, y_test = split_data(dfs[name], seed=seed)
-
-        # perform grid search for each classifier on each dataset
+    for df in dnames:
+        X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
         for name, classifier in classifiers.iteritems():
             clf_name = name
             clf = classifier()
@@ -158,4 +153,4 @@ if __name__ == '__main__':
             grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=5)
 
             # save training results
-            save_train_results(grid, data_name, clf_name)
+            save_train_results(grid, df, clf_name)

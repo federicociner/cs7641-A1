@@ -5,10 +5,11 @@ validation, learning, iteration and timing curves.
 """
 from helpers import load_pickled_model, get_abspath
 from model_train import split_data
-from sklearn.model_selection import learning_curve
+from sklearn.model_selection import learning_curve, StratifiedShuffleSplit
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import timeit
 
 
 def basic_results(grid, X_test, y_test, data_name, clf_name):
@@ -54,8 +55,11 @@ def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_na
     # set training sizes and intervals
     train_sizes = np.arange(0.01, 1.0, 0.025)
 
+    # set cross validation strategy to use StratifiedShuffleSplit
+    cv_strategy = StratifiedShuffleSplit(n_splits=cv, random_state=0)
+
     # create learning curve object
-    LC = learning_curve(estimator, X_train, y_train, cv=cv,
+    LC = learning_curve(estimator, X_train, y_train, cv=cv_strategy,
                         train_sizes=train_sizes, scoring=scorer, n_jobs=6)
 
     # extract training and test scores as data frames
@@ -109,18 +113,58 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
 
     # iterate through training sizes and capture training and predict times
     for i, train_data in enumerate(train_sizes):
+        X_train, X_test, y_train, y_test = split_data(
+            dataset, test_size=1 - train_data)
+        start_train = timeit.default_timer()
+        estimator.fit(X_train, y_train)
+        end_train = timeit.default_timer()
+        estimator.predict(X_test)
+        end_predict = timeit.default_timer()
+        train_time.append(end_train - start_train)
+        predict_time.append(end_predict - end_train)
+        df_final.append([train_data, train_time[i], predict_time[i]])
 
-# def model_report(y_pred, y_true):
-#     clf_report = classification_report(y_true, y_pred)
+        # def model_report(y_pred, y_true):
+        #     clf_report = classification_report(y_true, y_pred)
 
-#     report = ''
-#     report += 'AUROC: {} \n'.format(roc_auc_score(y_true, y_pred))
-#     report += 'Accuracy: {} \n'.format(accuracy_score(y_true, y_pred))
-#     report += 'Average precision score: {} \n'.format(
-#         average_precision_score(y_true, y_pred))
-#     report += 'F1: {} \n'.format(f1_score(y_true, y_pred))
-#     report += 'Hamming loss: {} \n'.format(hamming_loss(y_true, y_pred))
-#     report += '\n'
-#     report += clf_report
+        #     report = ''
+        #     report += 'AUROC: {} \n'.format(roc_auc_score(y_true, y_pred))
+        #     report += 'Accuracy: {} \n'.format(accuracy_score(y_true, y_pred))
+        #     report += 'Average precision score: {} \n'.format(
+        #         average_precision_score(y_true, y_pred))
+        #     report += 'F1: {} \n'.format(f1_score(y_true, y_pred))
+        #     report += 'Hamming loss: {} \n'.format(hamming_loss(y_true, y_pred))
+        #     report += '\n'
+        #     report += clf_report
 
-#     return report
+        #     return report
+
+if __name__ == '__main__':
+    # set seed for cross-validation sampling
+    seed = 0
+
+    # set scoring function
+    scorer = make_scorer(balanced_accuracy)
+
+    # load datasets
+    p_wine = get_abspath('winequality.csv', 'data/experiments')
+    p_seismic = get_abspath('seismic-bumps.csv', 'data/experiments')
+    df_wine = pd.read_csv(p_wine)
+    df_seismic = pd.read_csv(p_seismic)
+    dfs = {'wine': df_wine, 'seismic': df_seismic}
+    dnames = ['wine', 'seismic']
+
+    # load pickled models
+    estimators = {'KNN': None, 'DT': None}
+    mnames = ['KNN', 'DT']
+    for df in dnames:
+        for m in mnames:
+            mfile = '{}/{}_best_estimator.pkl'.format(m, df)
+            model = load_pickled_model(get_abspath(mfile, filepath='models'))
+            estimators[m] = model
+
+    # generate learning curves
+    for df in dnames:
+        X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
+        for name, estimator in estimators.iteritems():
+            create_learning_curve(estimator, scorer, X_train, y_train, data_name=df, clf_name=name)
