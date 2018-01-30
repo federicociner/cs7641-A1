@@ -17,6 +17,6 @@ class KNN(object):
 
         # set up parameter grid for parameters to search over
         self.params = {'KNN__metric': ['manhattan', 'euclidean', 'chebyshev'],
-                       'KNN__n_neighbors': np.arange(1, 51, 2),
+                       'KNN__n_neighbors': np.arange(1, 100, 1),
                        'KNN__weights': ['uniform', 'distance']
                        }

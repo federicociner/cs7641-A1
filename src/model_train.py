@@ -9,7 +9,11 @@ from sklearn.utils.class_weight import compute_sample_weight
 from helpers import get_abspath, save_pickled_model
 from clf_knn import KNN
 from clf_decision_tree import DT
+from clf_boosting import GBM
+from clf_neural_network import MLP
+from clf_svm import SVM
 import pandas as pd
+import timeit
 
 
 def balanced_f1(labels, predictions):
@@ -139,18 +143,30 @@ if __name__ == '__main__':
     dfs = {'wine': df_wine, 'seismic': df_seismic}
     dnames = ['wine', 'seismic']
 
-    # instantiate classifiers
-    classifiers = {'KNN': KNN, 'DT': DT}
+    # instantiate estimators
+    estimators = {'KNN': KNN,
+                  'DT': DT,
+                  'Boosting': GBM,
+                  'ANN': MLP,
+                  'SVM': SVM}
 
     # begin training loop
     for df in dnames:
         X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
-        for name, classifier in classifiers.iteritems():
+        for name, estimator in estimators.iteritems():
             clf_name = name
-            clf = classifier()
+            clf = estimator()
+
+            # start timing
+            start_time = timeit.default_timer()
 
             # run grid search
-            grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=5)
+            grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=3)
+
+            # end timing
+            end_time = timeit.default_timer()
+            elapsed = end_time - start_time
 
             # save training results
             save_train_results(grid, df, clf_name)
+            print '{} trained in {:f} seconds'.format(clf_name, elapsed)

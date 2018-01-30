@@ -4,12 +4,16 @@ validation, learning, iteration and timing curves.
 
 """
 from helpers import load_pickled_model, get_abspath
-from model_train import split_data
+from model_train import split_data, balanced_accuracy
+from sklearn.metrics import make_scorer
 from sklearn.model_selection import learning_curve, StratifiedShuffleSplit
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import timeit
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import seaborn
 
 
 def basic_results(grid, X_test, y_test, data_name, clf_name):
@@ -53,7 +57,7 @@ def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_na
 
     """
     # set training sizes and intervals
-    train_sizes = np.arange(0.01, 1.0, 0.025)
+    train_sizes = np.arange(0.01, 1.0, 0.01)
 
     # set cross validation strategy to use StratifiedShuffleSplit
     cv_strategy = StratifiedShuffleSplit(n_splits=cv, random_state=0)
@@ -77,14 +81,15 @@ def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_na
     # create learning curve plot
     plt.figure(1)
     plt.plot(train_sizes, np.mean(train_scores, axis=1),
-             marker='o', color='blue', label='Training Score')
+             marker='.', color='b', label='Training score')
     plt.plot(train_sizes, np.mean(test_scores, axis=1),
-             marker='o', color='green', label='Cross-validation Score')
+             marker='.', color='g', label='Cross-validation score')
     plt.legend()
     plt.grid(linestyle='dotted')
     plt.xlabel('Samples used for training as a percentage of total')
     plt.ylabel('Accuracy')
 
+    # save learning curve plot as PNG
     plotdir = 'plots'
     plot_tgt = '{}/{}'.format(plotdir, clf_name)
     plotpath = get_abspath('{}_LC.png'.format(data_name), plot_tgt)
@@ -104,7 +109,7 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
 
     """
     # set training sizes and intervals
-    train_sizes = np.arange(0.01, 1.0, 0.025)
+    train_sizes = np.arange(0.01, 1.0, 0.01)
 
     # initialise variables
     train_time = []
@@ -124,20 +129,30 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
         predict_time.append(end_predict - end_train)
         df_final.append([train_data, train_time[i], predict_time[i]])
 
-        # def model_report(y_pred, y_true):
-        #     clf_report = classification_report(y_true, y_pred)
+    # save timing results to CSV
+    timedata = pd.DataFrame(data=df_final, columns=[
+                            'Training Data Percentage', 'Train Time', 'Test Time'])
+    resdir = 'results'
+    res_tgt = '{}/{}'.format(resdir, clf_name)
+    timefile = get_abspath('{}_timing_curve.csv'.format(data_name), res_tgt)
+    timedata.to_csv(timefile, index=False)
 
-        #     report = ''
-        #     report += 'AUROC: {} \n'.format(roc_auc_score(y_true, y_pred))
-        #     report += 'Accuracy: {} \n'.format(accuracy_score(y_true, y_pred))
-        #     report += 'Average precision score: {} \n'.format(
-        #         average_precision_score(y_true, y_pred))
-        #     report += 'F1: {} \n'.format(f1_score(y_true, y_pred))
-        #     report += 'Hamming loss: {} \n'.format(hamming_loss(y_true, y_pred))
-        #     report += '\n'
-        #     report += clf_report
+    # generate timing curve plot
+    plt.figure(2)
+    plt.plot(train_sizes, train_time, marker='.', color='b', label='Train')
+    plt.plot(train_sizes, predict_time, marker='.', color='g', label='Predict')
+    plt.legend()
+    plt.grid(linestyle='dotted')
+    plt.xlabel('Samples used for training as a percentage of total')
+    plt.ylabel('Elapsed user time in seconds')
 
-        #     return report
+    # save timing curve plot as PNG
+    plotdir = 'plots'
+    plot_tgt = '{}/{}'.format(plotdir, clf_name)
+    plotpath = get_abspath('{}_TC.png'.format(data_name), plot_tgt)
+    plt.savefig(plotpath)
+    plt.close()
+
 
 if __name__ == '__main__':
     # set seed for cross-validation sampling
@@ -154,17 +169,28 @@ if __name__ == '__main__':
     dfs = {'wine': df_wine, 'seismic': df_seismic}
     dnames = ['wine', 'seismic']
 
-    # load pickled models
-    estimators = {'KNN': None, 'DT': None}
-    mnames = ['KNN', 'DT']
+    # instantiate dict of estimators
+    estimators = {'KNN': None,
+                  'DT': None,
+                  'ANN': None,
+                  'SVM': None,
+                  'Boosting': None}
+    mnames = ['KNN', 'DT', 'ANN', 'SVM', 'Boosting']
+
+    # start model evaluation loop
     for df in dnames:
+        X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
+        # load pickled models into estimators dict
         for m in mnames:
             mfile = '{}/{}_best_estimator.pkl'.format(m, df)
+            print "Estimator: " + mfile + " is being used for " + df + " data"
             model = load_pickled_model(get_abspath(mfile, filepath='models'))
             estimators[m] = model
 
-    # generate learning curves
-    for df in dnames:
-        X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
+        # generate validation, learning, timing and iteration curves/plots
         for name, estimator in estimators.iteritems():
-            create_learning_curve(estimator, scorer, X_train, y_train, data_name=df, clf_name=name)
+            # basic_results(grid, X_test, y_test, data_name=df, clf_name=name)
+            create_learning_curve(estimator, scorer, X_train,
+                                  y_train, data_name=df, clf_name=name)
+            create_timing_curve(estimator, dataset=dfs[
+                                df], data_name=df, clf_name=name)

@@ -142,7 +142,7 @@ NNNI-1
 I-1
 I0
 tp61
-bS'\x01\x00\x00\x00\x00\x00\x00\x00'
+bS'\x05\x00\x00\x00\x00\x00\x00\x00'
 p62
 tp63
 Rp64
@@ -212,7 +212,7 @@ S'kd_tree'
 p91
 sS'weights'
 p92
-S'uniform'
+S'distance'
 p93
 sS'_tree'
 p94
