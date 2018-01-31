@@ -60,3 +60,9 @@ def preprocess_seismic():
 
     # save to CSV
     save_dataset(df, 'seismic-bumps.csv', sep=',', subdir=tdir)
+
+
+if __name__ == '__main__':
+    # run preprocessing functions
+    preprocess_winequality()
+    preprocess_seismic()

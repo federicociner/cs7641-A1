@@ -4,7 +4,7 @@ validation, learning, iteration and timing curves.
 
 """
 from helpers import load_pickled_model, get_abspath
-from model_train import split_data, balanced_accuracy
+from model_train import split_data, balanced_accuracy, balanced_f1
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import learning_curve, StratifiedShuffleSplit
 import pandas as pd
@@ -14,6 +14,7 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import seaborn
+import os
 
 
 def basic_results(grid, X_test, y_test, data_name, clf_name):
@@ -29,17 +30,19 @@ def basic_results(grid, X_test, y_test, data_name, clf_name):
         clf_name (str): Type of algorithm.
 
     """
-    # set columns and data points to be extracted from grid object
-    cols = ['best_estimator', 'best_score', 'best_params', 'test_score']
-    data = [[grid.best_estimator_, grid.best_score_,
-             grid.best_params_, grid.score(X_test, y_test)]]
+    # get best score, test score, scoring function and best parameters
+    clf = clf_name
+    dn = data_name
+    bs = grid.best_score_
+    ts = grid.score(X_test, y_test)
+    sf = grid.scorer_
+    bp = grid.best_params_
 
-    # write results to a data frame
+    # write results to a combined results file
     parentdir = 'results'
-    results = pd.DataFrame(columns=cols, data=data)
-    target = '{}/{}'.format(parentdir, clf_name)
-    resfile = get_abspath('{}_basic_results.csv'.format(data_name), target)
-    results.to_csv(resfile, index=False)
+    resfile = get_abspath('combined_results.csv', parentdir)
+    with open(resfile, 'a') as f:
+        f.write('{},{},{},{},{},{}\n'.format(clf, dn, bs, ts, sf, bp))
 
 
 def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_name, cv=5):
@@ -57,7 +60,7 @@ def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_na
 
     """
     # set training sizes and intervals
-    train_sizes = np.arange(0.01, 1.0, 0.01)
+    train_sizes = np.arange(0.01, 1.0, 0.02)
 
     # set cross validation strategy to use StratifiedShuffleSplit
     cv_strategy = StratifiedShuffleSplit(n_splits=cv, random_state=0)
@@ -109,7 +112,7 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
 
     """
     # set training sizes and intervals
-    train_sizes = np.arange(0.01, 1.0, 0.01)
+    train_sizes = np.arange(0.01, 1.0, 0.02)
 
     # initialise variables
     train_time = []
@@ -155,11 +158,18 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
 
 
 if __name__ == '__main__':
+    # remove existing combined_results.csv file
+    try:
+        combined = get_abspath('combined_results.csv', 'results')
+        os.remove(combined)
+    except:
+        pass
+
     # set seed for cross-validation sampling
     seed = 0
 
     # set scoring function
-    scorer = make_scorer(balanced_accuracy)
+    scorer = make_scorer(balanced_f1)
 
     # load datasets
     p_wine = get_abspath('winequality.csv', 'data/experiments')
@@ -182,15 +192,16 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
         # load pickled models into estimators dict
         for m in mnames:
-            mfile = '{}/{}_best_estimator.pkl'.format(m, df)
+            mfile = '{}/{}_grid.pkl'.format(m, df)
             print "Estimator: " + mfile + " is being used for " + df + " data"
             model = load_pickled_model(get_abspath(mfile, filepath='models'))
             estimators[m] = model
 
         # generate validation, learning, timing and iteration curves/plots
         for name, estimator in estimators.iteritems():
-            # basic_results(grid, X_test, y_test, data_name=df, clf_name=name)
-            create_learning_curve(estimator, scorer, X_train,
+            basic_results(estimator, X_test, y_test,
+                          data_name=df, clf_name=name)
+            create_learning_curve(estimator.best_estimator_, scorer, X_train,
                                   y_train, data_name=df, clf_name=name)
-            create_timing_curve(estimator, dataset=dfs[
+            create_timing_curve(estimator.best_estimator_, dataset=dfs[
                                 df], data_name=df, clf_name=name)

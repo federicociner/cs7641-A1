@@ -19,7 +19,8 @@ class SVM(object):
                        'SVM__C': 10.0 ** np.arange(-3, 8),
                        'SVM__gamma': 10.0 ** np.arange(-5, 4),
                        'SVM__cache_size': [200],
-                       'SVM__max_iter': [3000],
+                       'SVM__max_iter': [5000],
                        'SVM__degree': [2, 3],
-                       'SVM__coef0': [0, 1]
+                       'SVM__coef0': [0, 1],
+                       'SVM__class_weight': [None, 'balanced']
                        }

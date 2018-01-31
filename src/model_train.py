@@ -9,7 +9,7 @@ from sklearn.utils.class_weight import compute_sample_weight
 from helpers import get_abspath, save_pickled_model
 from clf_knn import KNN
 from clf_decision_tree import DT
-from clf_boosting import GBM
+from clf_boosting import ADA
 from clf_neural_network import MLP
 from clf_svm import SVM
 import pandas as pd
@@ -45,7 +45,7 @@ def balanced_accuracy(labels, predictions):
     return accuracy_score(labels, predictions, sample_weight=weights)
 
 
-def split_data(df, test_size=0.3, seed=0):
+def split_data(df, test_size=0.2, seed=0):
     """Prepares a data frame for model training and testing by converting data
     to Numpy arrays and splitting into train and test sets.
 
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     seed = 0
 
     # set scoring function
-    scorer = make_scorer(balanced_accuracy)
+    scorer = make_scorer(balanced_f1)
 
     # load datasets
     p_wine = get_abspath('winequality.csv', 'data/experiments')
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     # instantiate estimators
     estimators = {'KNN': KNN,
                   'DT': DT,
-                  'Boosting': GBM,
+                  'Boosting': ADA,
                   'ANN': MLP,
                   'SVM': SVM}
 
@@ -161,7 +161,7 @@ if __name__ == '__main__':
             start_time = timeit.default_timer()
 
             # run grid search
-            grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=3)
+            grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=5)
 
             # end timing
             end_time = timeit.default_timer()
