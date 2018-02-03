@@ -11,15 +11,16 @@ class ADA(object):
         """ Construct the AdaBoost classifier object
 
         """
-        # created pre-pruned tree as base estimator
-        base_estimator = DecisionTreeClassifier(max_depth=15, min_samples_leaf=3)
 
         # set up model pipeline, scaling training data to have zero mean and
         # unit variance
         self.pipeline = Pipeline(
-            [('Scale', StandardScaler()), ('ADA', AdaBoostClassifier(base_estimator=base_estimator))])
+            [('Scale', StandardScaler()), ('ADA', AdaBoostClassifier(base_estimator=DecisionTreeClassifier()))])
 
         # set up parameter grid for parameters to search over
         self.params = {'ADA__learning_rate': np.arange(0.1, 1.0, 0.05),
-                       'ADA__n_estimators': [100, 300, 500, 700, 900],
+                       'ADA__n_estimators': [1, 2, 5, 7, 15, 20],
+                       'ADA__base_estimator__class_weight': ['balanced'],
+                       'ADA__base_estimator__max_depth': np.arange(1, 20, 1),
+                       'ADA__base_estimator__criterion': ['gini', 'entropy'],
                        }

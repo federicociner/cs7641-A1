@@ -6,7 +6,7 @@ validation, learning, iteration and timing curves.
 from helpers import load_pickled_model, get_abspath
 from model_train import split_data, balanced_accuracy, balanced_f1
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import learning_curve, StratifiedShuffleSplit
+from sklearn.model_selection import learning_curve, StratifiedShuffleSplit, cross_val_score, validation_curve
 import pandas as pd
 import numpy as np
 import timeit
@@ -23,13 +23,16 @@ def basic_results(grid, X_test, y_test, data_name, clf_name):
     for training.
 
     Args:
-        grid (GridSearchCV object): trained grid search object.
+        grid (GridSearchCV object): Trained grid search object.
         X_test (numpy.Array): Test features.
         y_test (numpy.Array): Test labels.
         data_name (str): Name of data set being tested.
         clf_name (str): Type of algorithm.
 
     """
+    # set seed
+    # np.random.seed(0)
+
     # get best score, test score, scoring function and best parameters
     clf = clf_name
     dn = data_name
@@ -42,10 +45,10 @@ def basic_results(grid, X_test, y_test, data_name, clf_name):
     parentdir = 'results'
     resfile = get_abspath('combined_results.csv', parentdir)
     with open(resfile, 'a') as f:
-        f.write('{},{},{},{},{},{}\n'.format(clf, dn, bs, ts, sf, bp))
+        f.write('{}|{}|{}|{}|{}|{}\n'.format(clf, dn, bs, ts, sf, bp))
 
 
-def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_name, cv=5):
+def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_name, cv=4):
     """Generates a learning curve for the specified estimator, saves tabular
     results to CSV and saves a plot of the learning curve.
 
@@ -59,8 +62,11 @@ def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_na
         cv (int): Number of folds in cross-validation splitting strategy.
 
     """
+    # set seed
+    # np.random.seed(0)
+
     # set training sizes and intervals
-    train_sizes = np.arange(0.01, 1.0, 0.02)
+    train_sizes = np.arange(0.01, 1.0, 0.03)
 
     # set cross validation strategy to use StratifiedShuffleSplit
     cv_strategy = StratifiedShuffleSplit(n_splits=cv, random_state=0)
@@ -87,10 +93,11 @@ def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_na
              marker='.', color='b', label='Training score')
     plt.plot(train_sizes, np.mean(test_scores, axis=1),
              marker='.', color='g', label='Cross-validation score')
-    plt.legend()
+    plt.legend(loc='best')
     plt.grid(linestyle='dotted')
     plt.xlabel('Samples used for training as a percentage of total')
-    plt.ylabel('Accuracy')
+    plt.ylabel('Balanced Accuracy')
+    plt.ylim((0, 1))
 
     # save learning curve plot as PNG
     plotdir = 'plots'
@@ -111,8 +118,11 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
         clf_name (str): Type of algorithm.
 
     """
+    # set seed
+    # np.random.seed(0)
+
     # set training sizes and intervals
-    train_sizes = np.arange(0.01, 1.0, 0.02)
+    train_sizes = np.arange(0.01, 1.0, 0.03)
 
     # initialise variables
     train_time = []
@@ -144,7 +154,7 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
     plt.figure(2)
     plt.plot(train_sizes, train_time, marker='.', color='b', label='Train')
     plt.plot(train_sizes, predict_time, marker='.', color='g', label='Predict')
-    plt.legend()
+    plt.legend(loc='best')
     plt.grid(linestyle='dotted')
     plt.xlabel('Samples used for training as a percentage of total')
     plt.ylabel('Elapsed user time in seconds')
@@ -157,6 +167,108 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
     plt.close()
 
 
+def create_iteration_curve(estimator, X_train, X_test, y_train, y_test, data_name, clf_name, param, scorer):
+    """Generates an iteration curve for the specified estimator, saves tabular
+    results to CSV and saves a plot of the iteration curve.
+
+    Args:
+        estimator (object): Target classifier.
+        X_train (numpy.Array): Training features.
+        X_test (numpy.Array): Test features.
+        y_train (numpy.Array): Training labels.
+        y_test (numpy.Array): Test labels.
+        data_name (str): Name of data set being tested.
+        clf_name (str): Type of algorithm.
+        params (dict): Name of # iterations param for classifier.
+        scorer (function): Scoring function.
+
+    """
+    # set seed
+    # np.random.seed(0)
+
+    # set variables
+    iterations = np.arange(1, 50, 1)
+    train_iter = []
+    predict_iter = []
+    final_df = []
+
+    # start loop
+    for i, iteration in enumerate(iterations):
+        estimator.set_params(**{param: iteration})
+        estimator.fit(X_train, y_train)
+        train_iter.append(np.mean(cross_val_score(
+            estimator, X_train, y_train, scoring=scorer, cv=4)))
+        predict_iter.append(np.mean(cross_val_score(
+            estimator, X_test, y_test, scoring=scorer, cv=4)))
+        final_df.append([iteration, train_iter[i], predict_iter[i]])
+
+    # save iteration results to CSV
+    itercsv = pd.DataFrame(data=final_df, columns=[
+        'Iterations', 'Train Accuracy', 'Test Accuracy'])
+    resdir = 'results'
+    res_tgt = '{}/{}'.format(resdir, clf_name)
+    iterfile = get_abspath('{}_iterations.csv'.format(data_name), res_tgt)
+    itercsv.to_csv(iterfile, index=False)
+
+    # generate iteration curve plot
+    plt.figure(3)
+    plt.plot(iterations, train_iter, marker='.',
+             color='b', label='Train Score')
+    plt.plot(iterations, predict_iter, marker='.',
+             color='g', label='Test Score')
+    plt.legend(loc='best')
+    plt.grid(linestyle='dotted')
+    plt.xlabel('Number of iterations')
+    plt.ylabel('Balanced Accuracy')
+    plt.ylim((0, 1))
+
+    # save iteration curve plot as PNG
+    plotdir = 'plots'
+    plot_tgt = '{}/{}'.format(plotdir, clf_name)
+    plotpath = get_abspath('{}_IC.png'.format(data_name), plot_tgt)
+    plt.savefig(plotpath)
+    plt.close()
+
+
+def create_validation_curve(estimator, X_train, y_train, data_name, clf_name, param_name, param_range, scorer):
+    """Generates an validation/complexity curve for the ANN estimator, saves
+    tabular results to CSV and saves a plot of the validation curve.
+
+    Args:
+        estimator (object): Target classifier.
+        X_train (numpy.Array): Training features.
+        y_train (numpy.Array): Training labels.
+        data_name (str): Name of data set being tested.
+        clf_name (str): Type of algorithm.
+        param_name (dict): Name of parameter to be tested.
+        param_range (dict): Range of parameter values to be tested.
+        scorer (function): Scoring function.
+
+    """
+    # generate validation curve results
+    train_scores, test_scores = validation_curve(
+        estimator, X_train, y_train, param_name=param_name, param_range=param_range, cv=4, scoring=scorer, n_jobs=6)
+
+    # generate validation curve plot
+    plt.figure(4)
+    plt.plot(param_range, np.mean(train_scores, axis=1),
+             marker='.', color='b', label='Train Score')
+    plt.plot(param_range, np.mean(test_scores, axis=1),
+             marker='.', color='g', label='Cross-validation Score')
+    plt.legend(loc='best')
+    plt.grid(linestyle='dotted')
+    plt.xlabel(param_name)
+    plt.ylabel('Balanced Accuracy')
+    plt.ylim((0, 1))
+
+    # save iteration curve plot as PNG
+    plotdir = 'plots'
+    plot_tgt = '{}/{}'.format(plotdir, clf_name)
+    plotpath = get_abspath('{}_VC.png'.format(data_name), plot_tgt)
+    plt.savefig(plotpath)
+    plt.close()
+
+
 if __name__ == '__main__':
     # remove existing combined_results.csv file
     try:
@@ -165,11 +277,8 @@ if __name__ == '__main__':
     except:
         pass
 
-    # set seed for cross-validation sampling
-    seed = 0
-
     # set scoring function
-    scorer = make_scorer(balanced_f1)
+    scorer = make_scorer(balanced_accuracy)
 
     # load datasets
     p_wine = get_abspath('winequality.csv', 'data/experiments')
@@ -183,25 +292,44 @@ if __name__ == '__main__':
     estimators = {'KNN': None,
                   'DT': None,
                   'ANN': None,
-                  'SVM': None,
+                  'SVM_RBF': None,
+                  'SVM_PLY': None,
                   'Boosting': None}
-    mnames = ['KNN', 'DT', 'ANN', 'SVM', 'Boosting']
+    mnames = ['KNN', 'DT', 'ANN', 'SVM_RBF', 'SVM_PLY', 'Boosting']
+
+    # estimators with iteration param
+    iterators = {'Boosting': 'ADA__n_estimators',
+                 'ANN': 'MLP__max_iter'}
+
+    # validation curve parameter names and ranges
+    vc_params = {'KNN': ('KNN__n_neighbors', np.arange(1, 50, 1)),
+                 'DT': ('DT__max_depth', np.arange(1, 100, 1)),
+                 'ANN': ('MLP__alpha', np.logspace(-12, -2, 40)),
+                 'SVM_RBF': ('SVMR__gamma', 1.5 ** np.arange(-10, -1)),
+                 'SVM_PLY': ('SVMP__C', 1.5 ** np.arange(-10, -1)),
+                 'Boosting': ('ADA__base_estimator__max_depth', np.arange(1, 50, 1))
+                 }
 
     # start model evaluation loop
     for df in dnames:
-        X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
+        X_train, X_test, y_train, y_test = split_data(dfs[df])
         # load pickled models into estimators dict
         for m in mnames:
             mfile = '{}/{}_grid.pkl'.format(m, df)
-            print "Estimator: " + mfile + " is being used for " + df + " data"
             model = load_pickled_model(get_abspath(mfile, filepath='models'))
             estimators[m] = model
 
-        # generate validation, learning, timing and iteration curves/plots
+        # generate validation, learning, and timing curves
         for name, estimator in estimators.iteritems():
-            basic_results(estimator, X_test, y_test,
-                          data_name=df, clf_name=name)
-            create_learning_curve(estimator.best_estimator_, scorer, X_train,
-                                  y_train, data_name=df, clf_name=name)
-            create_timing_curve(estimator.best_estimator_, dataset=dfs[
-                                df], data_name=df, clf_name=name)
+            ''' SINGLE ALGO  '''
+            if name == 'Boosting':
+                basic_results(estimator, X_test, y_test,
+                              data_name=df, clf_name=name)
+                create_learning_curve(estimator.best_estimator_, scorer, X_train, y_train, data_name=df, clf_name=name)
+                create_timing_curve(estimator.best_estimator_, dataset=dfs[
+                                    df], data_name=df, clf_name=name)
+                create_validation_curve(estimator.best_estimator_, X_train, y_train, data_name=df, clf_name=name, param_name=vc_params[name][0], param_range=vc_params[name][1], scorer=scorer)
+
+            # generate iteration curves for ANN and AdaBoost classifiers
+            if name == 'Boosting':
+                create_iteration_curve(estimator.best_estimator_, X_train, X_test, y_train, y_test, data_name=df, clf_name=name, param=iterators[name], scorer=scorer)

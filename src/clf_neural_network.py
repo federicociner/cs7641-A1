@@ -13,11 +13,15 @@ class MLP(object):
         """
         # set up model pipeline, scaling training data to have zero mean and
         # unit variance
-        self.pipeline = Pipeline([('Scale', StandardScaler()), ('MLP', MLPClassifier(
-            random_state=0, max_iter=2000, early_stopping=True))])
+        self.pipeline = Pipeline([('Scale', StandardScaler()), ('MLP', MLPClassifier(max_iter=5000, early_stopping=True))])
 
         # set up parameter grid for parameters to search over
+        alphas = [10 ** -exp for exp in np.arange(-1, 8, 0.5)]
+        d = 50
+        hidden_layer_size = [(h,) * l for l in [1, 2, 3]
+                             for h in [d // 2, d, d * 2]]
+
         self.params = {'MLP__activation': ['logistic', 'relu'],
-                       'MLP__alpha': np.arange(0.05, 3, 0.1),
-                       'MLP__hidden_layer_sizes': [(32), (64), (128), (32, 64, 32), (64, 128, 64)]
+                       'MLP__alpha': alphas,
+                       'MLP__hidden_layer_sizes': hidden_layer_size
                        }

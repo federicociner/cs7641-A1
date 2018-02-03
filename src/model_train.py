@@ -11,7 +11,7 @@ from clf_knn import KNN
 from clf_decision_tree import DT
 from clf_boosting import ADA
 from clf_neural_network import MLP
-from clf_svm import SVM
+from clf_svm import SVM_RBF, SVM_PLY
 import pandas as pd
 import timeit
 
@@ -19,7 +19,7 @@ import timeit
 def balanced_f1(labels, predictions):
     """Modifies the standard F1 scoring function to account for potential
     imbalances in class distributions.
-
+by
     Args:
         labels (numpy.array): Actual class labels.
         predictions (numpy.array): Predicted class labels.
@@ -45,7 +45,7 @@ def balanced_accuracy(labels, predictions):
     return accuracy_score(labels, predictions, sample_weight=weights)
 
 
-def split_data(df, test_size=0.2, seed=0):
+def split_data(df, test_size=0.3, seed=42):
     """Prepares a data frame for model training and testing by converting data
     to Numpy arrays and splitting into train and test sets.
 
@@ -129,11 +129,8 @@ def save_train_results(grid, data_name, clf_name):
 
 
 if __name__ == '__main__':
-    # set seed for cross-validation sampling
-    seed = 0
-
     # set scoring function
-    scorer = make_scorer(balanced_f1)
+    scorer = make_scorer(balanced_accuracy)
 
     # load datasets
     p_wine = get_abspath('winequality.csv', 'data/experiments')
@@ -148,25 +145,28 @@ if __name__ == '__main__':
                   'DT': DT,
                   'Boosting': ADA,
                   'ANN': MLP,
-                  'SVM': SVM}
+                  'SVM_RBF': SVM_RBF,
+                  'SVM_PLY': SVM_PLY}
 
     # begin training loop
     for df in dnames:
-        X_train, X_test, y_train, y_test = split_data(dfs[df], seed=seed)
+        X_train, X_test, y_train, y_test = split_data(dfs[df])
         for name, estimator in estimators.iteritems():
-            clf_name = name
-            clf = estimator()
+            ''' SINGLE ALGO TRAIN '''
+            if name == 'KNN':
+                clf_name = name
+                clf = estimator()
 
-            # start timing
-            start_time = timeit.default_timer()
+                # start timing
+                start_time = timeit.default_timer()
 
-            # run grid search
-            grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=5)
+                # run grid search
+                grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=4)
 
-            # end timing
-            end_time = timeit.default_timer()
-            elapsed = end_time - start_time
+                # end timing
+                end_time = timeit.default_timer()
+                elapsed = end_time - start_time
 
-            # save training results
-            save_train_results(grid, df, clf_name)
-            print '{} trained in {:f} seconds'.format(clf_name, elapsed)
+                # save training results
+                save_train_results(grid, df, clf_name)
+                print '{} trained in {:f} seconds'.format(clf_name, elapsed)

@@ -17,7 +17,8 @@ class DT(object):
 
         # set up parameter grid for parameters to search over
         self.params = {'DT__criterion': ['gini', 'entropy'],
-                       'DT__class_weight': [None, 'balanced'],
-                       'DT__max_depth': np.arange(1, 200, 1),
-                       'DT__min_samples_leaf': np.arange(1, 10, 1)
+                       'DT__class_weight': ['balanced'],
+                       'DT__max_depth': np.arange(1, 80, 1),
+                       'DT__min_samples_leaf': np.arange(1, 20, 1),
+                       'DT__max_features': np.arange(0.6, 1.0, 0.05)
                        }
