@@ -18,9 +18,9 @@ class ADA(object):
             [('Scale', StandardScaler()), ('ADA', AdaBoostClassifier(base_estimator=DecisionTreeClassifier()))])
 
         # set up parameter grid for parameters to search over
-        self.params = {'ADA__learning_rate': np.arange(0.1, 1.0, 0.05),
-                       'ADA__n_estimators': [1, 2, 5, 7, 15, 20],
+        self.params = {'ADA__learning_rate': np.arange(0.001, 0.2, 0.01),
+                       'ADA__n_estimators': [5, 10, 15, 30, 50, 100, 200],
                        'ADA__base_estimator__class_weight': ['balanced'],
-                       'ADA__base_estimator__max_depth': np.arange(1, 20, 1),
-                       'ADA__base_estimator__criterion': ['gini', 'entropy'],
+                       'ADA__base_estimator__max_depth': np.arange(1, 20, 2),
+                       'ADA__base_estimator__criterion': ['entropy'],
                        }

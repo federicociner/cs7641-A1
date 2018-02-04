@@ -152,21 +152,19 @@ if __name__ == '__main__':
     for df in dnames:
         X_train, X_test, y_train, y_test = split_data(dfs[df])
         for name, estimator in estimators.iteritems():
-            ''' SINGLE ALGO TRAIN '''
-            if name == 'KNN':
-                clf_name = name
-                clf = estimator()
+            clf_name = name
+            clf = estimator()
 
-                # start timing
-                start_time = timeit.default_timer()
+            # start timing
+            start_time = timeit.default_timer()
 
-                # run grid search
-                grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=4)
+            # run grid search
+            grid = train_model(X_train, y_train, clf=clf, scorer=scorer, cv=4)
 
-                # end timing
-                end_time = timeit.default_timer()
-                elapsed = end_time - start_time
+            # end timing
+            end_time = timeit.default_timer()
+            elapsed = end_time - start_time
 
-                # save training results
-                save_train_results(grid, df, clf_name)
-                print '{} trained in {:f} seconds'.format(clf_name, elapsed)
+            # save training results
+            save_train_results(grid, df, clf_name)
+            print '{} trained in {:f} seconds'.format(clf_name, elapsed)

@@ -187,7 +187,7 @@ def create_iteration_curve(estimator, X_train, X_test, y_train, y_test, data_nam
     # np.random.seed(0)
 
     # set variables
-    iterations = np.arange(1, 50, 1)
+    iterations = np.arange(1, 300, 10)
     train_iter = []
     predict_iter = []
     final_df = []
@@ -304,10 +304,10 @@ if __name__ == '__main__':
     # validation curve parameter names and ranges
     vc_params = {'KNN': ('KNN__n_neighbors', np.arange(1, 50, 1)),
                  'DT': ('DT__max_depth', np.arange(1, 100, 1)),
-                 'ANN': ('MLP__alpha', np.logspace(-12, -2, 40)),
-                 'SVM_RBF': ('SVMR__gamma', 1.5 ** np.arange(-10, -1)),
-                 'SVM_PLY': ('SVMP__C', 1.5 ** np.arange(-10, -1)),
-                 'Boosting': ('ADA__base_estimator__max_depth', np.arange(1, 50, 1))
+                 'ANN': ('MLP__alpha', np.logspace(-10, 1, 20)),
+                 'SVM_RBF': ('SVMR__gamma', 1.5 ** np.arange(-10, 3)),
+                 'SVM_PLY': ('SVMP__degree', np.arange(1, 5, 1)),
+                 'Boosting': ('ADA__learning_rate', np.arange(0.001, 1.0, 0.01))
                  }
 
     # start model evaluation loop
@@ -321,15 +321,11 @@ if __name__ == '__main__':
 
         # generate validation, learning, and timing curves
         for name, estimator in estimators.iteritems():
-            ''' SINGLE ALGO  '''
-            if name == 'Boosting':
-                basic_results(estimator, X_test, y_test,
-                              data_name=df, clf_name=name)
-                create_learning_curve(estimator.best_estimator_, scorer, X_train, y_train, data_name=df, clf_name=name)
-                create_timing_curve(estimator.best_estimator_, dataset=dfs[
-                                    df], data_name=df, clf_name=name)
-                create_validation_curve(estimator.best_estimator_, X_train, y_train, data_name=df, clf_name=name, param_name=vc_params[name][0], param_range=vc_params[name][1], scorer=scorer)
+            basic_results(estimator, X_test, y_test, data_name=df, clf_name=name)
+            create_learning_curve(estimator.best_estimator_, scorer, X_train, y_train, data_name=df, clf_name=name)
+            create_timing_curve(estimator.best_estimator_, dataset=dfs[df], data_name=df, clf_name=name)
+            create_validation_curve(estimator.best_estimator_, X_train, y_train, data_name=df, clf_name=name, param_name=vc_params[name][0], param_range=vc_params[name][1], scorer=scorer)
 
             # generate iteration curves for ANN and AdaBoost classifiers
-            if name == 'Boosting':
+            if name == 'ANN' or name == 'Boosting':
                 create_iteration_curve(estimator.best_estimator_, X_train, X_test, y_train, y_test, data_name=df, clf_name=name, param=iterators[name], scorer=scorer)
