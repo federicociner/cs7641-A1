@@ -30,9 +30,6 @@ def basic_results(grid, X_test, y_test, data_name, clf_name):
         clf_name (str): Type of algorithm.
 
     """
-    # set seed
-    # np.random.seed(0)
-
     # get best score, test score, scoring function and best parameters
     clf = clf_name
     dn = data_name
@@ -62,9 +59,6 @@ def create_learning_curve(estimator, scorer, X_train, y_train, data_name, clf_na
         cv (int): Number of folds in cross-validation splitting strategy.
 
     """
-    # set seed
-    # np.random.seed(0)
-
     # set training sizes and intervals
     train_sizes = np.arange(0.01, 1.0, 0.03)
 
@@ -118,9 +112,6 @@ def create_timing_curve(estimator, dataset, data_name, clf_name):
         clf_name (str): Type of algorithm.
 
     """
-    # set seed
-    # np.random.seed(0)
-
     # set training sizes and intervals
     train_sizes = np.arange(0.01, 1.0, 0.03)
 
@@ -183,9 +174,6 @@ def create_iteration_curve(estimator, X_train, X_test, y_train, y_test, data_nam
         scorer (function): Scoring function.
 
     """
-    # set seed
-    # np.random.seed(0)
-
     # set variables
     iterations = np.arange(1, 300, 10)
     train_iter = []

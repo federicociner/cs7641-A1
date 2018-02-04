@@ -1,11 +1,10 @@
-from sklearn.metrics import confusion_matrix
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from helpers import get_abspath
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
 
 
 def histogram(labels, dataname, outfile, outpath='plots/datasets'):

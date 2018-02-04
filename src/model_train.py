@@ -19,7 +19,7 @@ import timeit
 def balanced_f1(labels, predictions):
     """Modifies the standard F1 scoring function to account for potential
     imbalances in class distributions.
-by
+
     Args:
         labels (numpy.array): Actual class labels.
         predictions (numpy.array): Predicted class labels.

@@ -2,7 +2,7 @@
 ## Federico Ciner (fciner3)
 ## Spring 2018
 
-This ZIP file contains all of the necessary code and data to run the experiments used in Assignment 1.
+This project contains all of the necessary code and data to run the experiments used in CS7641 Assignment 1.
 
 ## Setup
 
