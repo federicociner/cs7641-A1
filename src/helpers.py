@@ -27,6 +27,7 @@ def get_abspath(filename, filepath):
         filepath (str): Subdirectory of file.
     Returns:
         fullpath (str): Absolute filepath.
+
     """
     p = os.path.abspath(os.path.join(os.curdir, os.pardir))
     fullpath = os.path.join(p, filepath, filename)
@@ -40,6 +41,7 @@ def save_pickled_model(model, filepath):
     Args:
         model (object): sklearn model object.
         filepath (str): Output folder.
+
     """
     with open(filepath, 'wb+') as model_file:
         pickler = pickle.Pickler(model_file)
